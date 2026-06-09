@@ -17,22 +17,16 @@ from app.utils.auth import verify_token, create_token, hash_password, verify_pas
 from app.utils.rate_limiter import rate_limiter
 from app.models.user import UserDB
 
-# 🔥 TAMBAHKAN INI - Security scheme untuk Swagger
+# Security scheme untuk Swagger
 security = HTTPBearer(auto_error=False)
 
 app = FastAPI(
     title="DocuChat API", 
     version="1.0.0",
-    # 🔥 TAMBAHKAN INI AGAR SWAGGER PUNYA AUTH BUTTON
     swagger_ui_parameters={
         "persistAuthorization": True,
     }
 )
-
-# 🔥 TAMBAHKAN INI - Daftarkan security scheme
-app.swagger_ui_init_oauth = {
-    "usePkceWithAuthorizationCodeGrant": True,
-}
 
 # CORS
 app.add_middleware(
@@ -43,9 +37,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Cache
-user_indexes = {}
-user_rag_services = {}
+# ==================================================
+# USER SESSION MANAGER (Fix masalah PDF lama)
+# ==================================================
+class UserSessionManager:
+    """Manager untuk nyimpen session user"""
+    def __init__(self):
+        self._indexes = {}
+        self._services = {}
+    
+    def set_index(self, user_id: int, index):
+        self._indexes[user_id] = index
+    
+    def get_index(self, user_id: int):
+        return self._indexes.get(user_id)
+    
+    def set_service(self, user_id: int, service):
+        self._services[user_id] = service
+    
+    def get_service(self, user_id: int):
+        return self._services.get(user_id)
+    
+    def has_user(self, user_id: int):
+        return user_id in self._indexes
+    
+    def get_all_user_ids(self):
+        return list(self._indexes.keys())
+
+user_manager = UserSessionManager()
 
 UPLOAD_DIR = "./uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -96,7 +115,6 @@ async def upload_pdf(
 ):
     """Upload and process PDF files"""
     
-    # 🔥 CEK MANUAL JIKA TOKEN TIDAK ADA
     if not credentials:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
@@ -134,13 +152,14 @@ async def upload_pdf(
         ingestor = PDFIngestor(str(user_id))
         index = ingestor.process_pdfs_from_paths([f["path"] for f in saved_files])
         
-        user_indexes[user_id] = index
-        user_rag_services[user_id] = RAGService(user_id, index=index)
+        # Simpan ke session manager
+        user_manager.set_index(user_id, index)
+        user_manager.set_service(user_id, RAGService(user_id, index=index))
         
         for f in saved_files:
             UserDB.add_upload(user_id, f["original_name"])
         
-        print(f"[UPLOAD] SUCCESS! Cache keys: {list(user_indexes.keys())}")
+        print(f"[UPLOAD] SUCCESS! User {user_id} now has {len(user_manager.get_all_user_ids())} active user(s)")
         
         return {
             "status": "success",
@@ -193,21 +212,35 @@ async def chat(
     user_id = verify_token(credentials.credentials)
     question = request.get("question", "")
     
-    print(f"[CHAT] User ID: {user_id}, Cache keys: {list(user_indexes.keys())}")
+    print(f"[CHAT] User ID: {user_id}, Active users: {user_manager.get_all_user_ids()}")
+    print(f"[CHAT] User has documents: {user_manager.has_user(user_id)}")
     
     allowed, wait = rate_limiter.can_request(user_id)
     if not allowed:
         raise HTTPException(status_code=429, detail=f"Rate limit exceeded. Wait {wait} seconds")
     
-    if user_id not in user_indexes:
-        raise HTTPException(status_code=404, detail="No documents uploaded yet. Please upload PDF first.")
+    # Cek apakah user punya dokumen
+    if not user_manager.has_user(user_id):
+        # Coba load dari disk
+        print(f"[CHAT] User {user_id} not in cache, attempting to load from disk...")
+        rag_service = RAGService(user_id)
+        if rag_service.has_documents():
+            user_manager.set_service(user_id, rag_service)
+            # Index juga perlu di-set
+            if hasattr(rag_service, 'index'):
+                user_manager.set_index(user_id, rag_service.index)
+            print(f"[CHAT] Successfully loaded user {user_id} from disk")
+        else:
+            raise HTTPException(status_code=404, detail="No documents uploaded yet. Please upload PDF first.")
     
-    if user_id not in user_rag_services:
-        user_rag_services[user_id] = RAGService(user_id, index=user_indexes[user_id])
+    # Ambil atau buat service
+    rag_service = user_manager.get_service(user_id)
+    if rag_service is None:
+        rag_service = RAGService(user_id, index=user_manager.get_index(user_id))
+        user_manager.set_service(user_id, rag_service)
     
     async def generate_stream():
-        rag = user_rag_services[user_id]
-        result = rag.ask(question)
+        result = rag_service.ask(question)
         answer = result["answer"]
         sources = result.get("sources", [])
         
