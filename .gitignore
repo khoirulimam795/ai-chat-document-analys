@@ -1,0 +1,72 @@
+# ============================================
+# SECURITY - JANGAN PERNAH COMMIT
+# ============================================
+# Environment variables (API Keys)
+.env
+*.env
+!.env.example
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+user.db
+query_log.json
+
+# Uploaded files (PDF user)
+uploads/
+temp/
+*.pdf
+
+# Vector database (ChromaDB)
+storage/
+chroma_db/
+*.bin
+
+# ============================================
+# PYTHON CACHE
+# ============================================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ============================================
+# VIRTUAL ENVIRONMENT
+# ============================================
+venv/
+env/
+ENV/
+.venv
+
+# ============================================
+# IDE & EDITOR
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ============================================
+# LOGS
+# ============================================
+*.log
+*.json.log
+
+# ============================================
+# BACKUP FILES
+# ============================================
+*.backup
+*.bak
+*.old
+
+# ============================================
+# OS FILES
+# ============================================
+.DS_Store
+Thumbs.db
+desktop.ini

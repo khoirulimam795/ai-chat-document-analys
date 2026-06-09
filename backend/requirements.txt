@@ -1,0 +1,19 @@
+# --- Core Framework & Web UI ---
+streamlit
+python-dotenv
+
+# --- LlamaIndex Core & Extensions ---
+llama-index-core
+llama-index
+llama-index-llms-groq
+llama-index-embeddings-huggingface
+llama-index-vector-stores-chroma
+
+# --- Database & PDF Extractor ---
+chromadb
+pdfplumber
+
+# --- AI Backend & Embeddings (Wajib buat RAM 8GB / Anti-Error) ---
+sentence-transformers
+torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu

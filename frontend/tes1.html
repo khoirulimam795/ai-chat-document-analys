@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DocuChat — RAG PDF Chatbot</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- ========== LOGIN SCREEN ========== -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="brand">
+        <div class="brand-icon">📄</div>
+        <div class="brand-text"><span class="docu">Irull</span><span class="chat">Chat</span></div>
+      </div>
+      <p class="tagline">Analisis dokumen pakai AI, gratis dan mudah.</p>
+      <input type="text" class="login-input" id="loginUsername" placeholder="Username" value="admin">
+      <input type="password" class="login-input" id="loginPassword" placeholder="Password" value="admin123">
+      <button class="btn btn-primary login-btn" onclick="login()">Masuk →</button>
+      <div class="login-error" id="loginError"
+        style="color: var(--red); font-size: 12px; margin-top: 12px; display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Overlay mobile sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- ========== MAIN APP ========== -->
+  <div class="app-container" id="appContainer" style="display:none;">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="brand-icon">📄</div>
+          <div class="brand-text"><span class="docu">Irull</span><span class="chat">Chat</span></div>
+        </div>
+        <button class="icon-btn" id="themeToggle" onclick="toggleTheme()">🌙</button>
+      </div>
+
+      <!-- Upload Zone -->
+      <div class="upload-zone" id="uploadZone">
+        <span class="icon">📎</span>
+        <div class="title">Drop PDF disini</div>
+        <div class="subtitle">atau klik untuk pilih file</div>
+        <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+      </div>
+
+      <!-- Upload Progress -->
+      <div class="progress-container" id="uploadProgress">
+        <div class="progress-label">
+          <span id="progressText">Mengekstrak teks...</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Doc List -->
+      <div class="doc-list-title">📚 Dokumen</div>
+      <div class="doc-list" id="docList">
+        <div class="doc-item skeleton-item" style="justify-content:center;color:var(--ink-muted);">Belum ada dokumen
+        </div>
+      </div>
+
+      <!-- Tip -->
+      <div class="onboarding-tip" id="sidebarTip">
+        💡 <span id="tipText">Upload PDF di atas untuk mulai bertanya!</span>
+      </div>
+
+      <div class="sidebar-footer">DocuChat v1.0 · AI-powered RAG</div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-area">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="hamburger" id="hamburger" onclick="openSidebar()">☰</button>
+          <div>
+            <div class="doc-title" id="activeDocTitle">Belum ada dokumen</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button class="btn btn-secondary" onclick="clearChat()">🗑️ <span class="btn-text">Hapus Chat</span></button>
+          <button class="btn btn-secondary" onclick="logout()">🚪 <span class="btn-text">Logout</span></button>
+        </div>
+      </header>
+
+      <div class="chat-area" id="chatArea">
+        <div class="welcome-banner" id="welcomeBanner">
+          <span class="welcome-icon">🗿</span>
+          <h1>Halo! Aku IrullChat</h1>
+          <p class="welcome-sub">Upload PDF lo, terus tanya apa aja tentang isinya. Aku bakal jawab berdasarkan dokumen
+            yang lo kasih.</p>
+          <div class="quick-questions">
+            <button class="quick-q" onclick="sendQuickQ('📋 Ringkasan dokumen?')">📋 Ringkasan</button>
+            <button class="quick-q" onclick="sendQuickQ('🔍 Apa isi bab 3?')">🔍 Bab 3</button>
+            <button class="quick-q" onclick="sendQuickQ('📌 Poin-poin penting?')">📌 Poin penting</button>
+            <button class="quick-q" onclick="sendQuickQ('💡 Kesimpulan?')">💡 Kesimpulan</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div class="input-hint">💡 AI hanya menjawab dari isi PDF yang diunggah</div>
+        <div class="input-wrapper">
+          <textarea id="chatInput" rows="1" placeholder="Tanya apa aja tentang PDF lo..."
+            onkeydown="handleEnter(event)"></textarea>
+          <button class="send-btn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>
